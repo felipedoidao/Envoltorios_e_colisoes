@@ -1,0 +1,154 @@
+let c1, c2, c3, c4, r1, r2, r3, obb;
+let speedX;
+function setup() {
+  createCanvas(400, 500);
+  
+  c1 = [200, 100, 50];
+  c2 = [200, 100, 50];
+  
+  r1 = [200, 175, 50, 50];
+  r2 = [200, 175, 50, 50];
+  
+  c3 = [200, 300, 50];
+  r3 = [200, 275, 50, 50];
+  
+  c4 = [200, 400, 50];
+  obb = [200, 400, 80, 50, 60]
+  
+  speedX = 1;
+  
+}
+
+function draw() {
+  background(220);
+  
+  c1[0] += speedX;
+  c2[0] -= speedX;
+  
+  r1[0] += speedX;
+  r2[0] -= speedX;
+  
+  r3[0] -= speedX;
+  c3[0] += speedX;
+  
+  c4[0] += speedX;
+  obb[0] -= speedX;
+  
+  if(c1[0] > width || c1[0] < 0){
+    speedX = -speedX;
+  }
+
+  if(circleCollision(c1, c2)){
+    fill(255, 0, 0)
+  }
+  else fill(0, 255, 0)
+  circle(c1[0], c1[1], c1[2]);
+  circle(c2[0], c2[1], c2[2]);
+  
+  
+  if(rectCollision(r1, r2)){
+    fill(255, 0, 0)
+  }
+  else fill(0, 255, 0)
+  rect(r1[0], r1[1], r1[2], r1[3]);
+  rect(r2[0], r2[1], r2[2], r2[3]);
+
+  
+  if(circleRectCollision(c3, r3)){
+    fill(255, 0, 0)
+  }
+  else fill(0, 255, 0)
+  circle(c3[0], c3[1], c3[2]);
+  rect(r3[0], r3[1], r3[2], r3[3]);
+  
+
+  if(circleOBBCollision(c4, obb, obb[4])){
+    fill(255, 0, 0)
+  }
+  else fill(0, 255, 0)
+  circle(c4[0], c4[1], c4[2]);
+  push();
+  translate(obb[0] + obb[2] / 2, obb[1] + obb[3] / 2);
+  rotate(obb[4]);
+  rectMode(CENTER);
+  rect(0, 0, obb[2], obb[3]);
+  pop();
+  
+  circleOBBCollision(c4, obb, obb[4])
+  
+}
+
+// calcular distância
+function distance(x1, y1, x2, y2){
+  let dx = x1 - x2;
+  let dy = y1 - y2;
+  
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
+// colisão de círculos
+function circleCollision(c1, c2){
+  
+  let distancia = distance(c1[0], c1[1], c2[0], c2[1]);
+  
+  return distancia <= c1[2]/2 + c2[2]/2;
+}
+
+// colisão de retângulos
+function rectCollision(r1, r2) {
+  
+  let separadosHorizontalmente = r1[0] > r2[0] + r2[2] || r2[0] > r1[0] + r1[2];
+  let separadosVerticalmente = r1[1] > r2[1] + r2[3] || r2[1] > r1[1] + r1[3];
+  
+  
+  return !(separadosHorizontalmente || separadosVerticalmente);
+}
+
+// colisão de círculo com retângulo
+function circleRectCollision(c, r) {
+  let d2 = 0;
+  let radius = c[2] / 2;
+  
+  // Para eixo X
+  if (c[0] < r[0]) {
+    d2 += (r[0] - c[0]) ** 2;
+  } else if (c[0] > r[0] + r[2]) {
+    d2 += (c[0] - (r[0] + r[2])) ** 2;
+  }
+
+  // Para eixo Y
+  if (c[1] < r[1]) { // acima do retângulo
+    d2 += (r[1] - c[1]) ** 2;
+  } else if (c[1] > r[1] + r[3]) {
+    d2 += (c[1] - (r[1] + r[3])) ** 2;
+  }
+  
+  return Math.sqrt(d2) <= radius;
+}
+
+// Colisão do círculo com OBB
+function circleOBBCollision(c, r, angle) {
+  let radius = c[2] / 2;
+
+  let translatedCircleX = c[0] - (r[0] + r[2] / 2);
+  let translatedCircleY = c[1] - (r[1] + r[3] / 2);
+
+  let unrotatedX = translatedCircleX * cos(-angle) - translatedCircleY * sin(-angle);
+  let unrotatedY = translatedCircleX * sin(-angle) + translatedCircleY * cos(-angle);
+  
+  let d2 = 0;
+
+  if (unrotatedX < -r[2] / 2) {
+    d2 += (-r[2] / 2 - unrotatedX) ** 2;
+  } else if (unrotatedX > r[2] / 2) {
+    d2 += (unrotatedX - r[2] / 2) ** 2;
+  }
+
+  if (unrotatedY < -r[3] / 2) {
+    d2 += (-r[3] / 2 - unrotatedY) ** 2;
+  } else if (unrotatedY > r[3] / 2) {
+    d2 += (unrotatedY - r[3] / 2) ** 2;
+  }
+
+  return Math.sqrt(d2) <= radius;
+}

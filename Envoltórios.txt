@@ -1,0 +1,195 @@
+function Som(v1, v2) {
+  return [v1[0] + v2[0], v1[1] + v2[1]];
+}
+
+function Sub(v1, v2) {
+  return [v1[0] - v2[0], v1[1] - v2[1]];
+}
+
+function Compr(v) {
+  return sqrt(v[0] * v[0] + v[1] * v[1]);
+}
+
+function Esc(v1, v2) {
+  return (v1[0] * v2[0] + v1[1] * v2[1]);
+}
+
+let pointsAABB = [];
+let pointsOBB = [];
+let pointsCircle = [];
+
+let aabb, obb, circle;
+
+function setup() {
+  createCanvas(800, 600);
+  
+  for (let i = 0; i < 50; i++) {
+    pointsAABB.push([random(50, 250), random(50, 250)]);
+    pointsOBB.push([random(300, 550), random(50, 250)]);
+    pointsCircle.push([random(600, 750), random(50, 250)]);
+  }
+  
+  aabb = createAABB(pointsAABB);
+  
+  circle = createCircle(pointsCircle);
+}
+
+function draw() {
+  background(220);
+  obb = createOBB(pointsOBB);
+
+  drawPoints(pointsAABB);
+  drawPoints(pointsOBB);
+  drawPoints(pointsCircle);
+
+  drawAABB(aabb);
+  drawOBB(obb);
+  drawCircle(circle);
+}
+
+function drawPoints(points) {
+  for (let pt of points) {
+    ellipse(pt[0], pt[1], 5, 5);
+  }
+}
+
+function createAABB(points) {
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
+  
+  for (let i = 0; i < points.length; i++){
+    let x = points[i][0]
+    let y = points[i][1]
+    
+    if(x < minX) minX = x
+    if(x > maxX) maxX = x
+    
+    if(y < minY) minY = y
+    if(y > maxY) maxY = y
+  }
+
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+function drawAABB(aabb) {
+  noFill();
+  stroke(255, 0, 0);
+  rect(aabb.x, aabb.y, aabb.w, aabb.h);
+}
+
+
+function createOBB(points) {
+
+  let sumX = 0, sumY = 0;
+  for (let i = 0; i < points.length; i++) {
+    sumX += points[i][0];
+    sumY += points[i][1];
+  }
+  let centerX = sumX / points.length;
+  let centerY = sumY / points.length;
+  let center = [centerX, centerY];
+
+
+  let mouseVector = [mouseX - centerX, mouseY - centerY];
+  if (Compr(mouseVector) === 0) mouseVector = [1, 0];
+
+
+  let axis1 = [mouseVector[0] / Compr(mouseVector), mouseVector[1] / Compr(mouseVector)];
+
+
+  let axis2 = [-axis1[1], axis1[0]];
+
+
+  let minProj1 = Infinity, maxProj1 = -Infinity;
+  let minProj2 = Infinity, maxProj2 = -Infinity;
+
+  for (let i = 0; i < points.length; i++) {
+    let v = Sub(points[i], center);
+    let proj1 = Esc(v, axis1);
+    let proj2 = Esc(v, axis2);
+    minProj1 = min(minProj1, proj1);
+    maxProj1 = max(maxProj1, proj1);
+    minProj2 = min(minProj2, proj2);
+    maxProj2 = max(maxProj2, proj2);
+  }
+
+  let width = maxProj1 - minProj1;
+  let height = maxProj2 - minProj2;
+
+  let centerProj1 = (maxProj1 + minProj1) / 2;
+  let centerProj2 = (maxProj2 + minProj2) / 2;
+
+  let centerOBB = [
+    center[0] + centerProj1 * axis1[0] + centerProj2 * axis2[0],
+    center[1] + centerProj1 * axis1[1] + centerProj2 * axis2[1]
+  ];
+
+  let angle = atan2(axis1[1], axis1[0]);
+
+  return { centerOBB, width, height, angle };
+}
+
+function drawOBB(obb) {
+  push();
+  translate(obb.centerOBB[0], obb.centerOBB[1]);
+  rotate(obb.angle);
+  noFill();
+  stroke(0, 255, 0);
+  rectMode(CENTER);
+  rect(0, 0, obb.width, obb.height);
+  pop();
+}
+
+function createCircle(points) {
+  let sumX = 0, sumY = 0;
+  for (let i = 0; i < points.length; i++) {
+    sumX += points[i][0];
+    sumY += points[i][1];
+  }
+  let centerX = sumX / points.length;
+  let centerY = sumY / points.length;
+  let center = [centerX, centerY];
+  
+  let maxRadius = 0;
+  for (let i = 0; i < points.length; i++) {
+    let d = Compr(Sub(points[i], center));
+    if (d > maxRadius) {
+      maxRadius = d;
+    }
+  }
+  
+  return { x: centerX, y: centerY, r: maxRadius };
+}
+
+function createCircle(points) {
+  
+  let xCords = 0;
+  let yCords = 0;
+  
+  for(let i = 0; i < points.length; i++){
+    xCords += points[i][0]
+    yCords += points[i][1]
+  }
+  
+  let centerX = xCords / points.length;
+  let centerY = yCords / points.length;
+  let center = [centerX, centerY];
+  
+  let maxRadius = 0;
+  for (let p of points) {
+    let d = Compr(Sub(p, center));
+    if (d > maxRadius) {
+      maxRadius = d;
+    }
+  }
+  
+  return { x: centerX, y: centerY, r: maxRadius };
+}
+
+function drawCircle(circle) {
+  noFill();
+  stroke(0, 0, 255);
+  ellipse(circle.x, circle.y, circle.r * 2);
+}
